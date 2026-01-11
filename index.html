@@ -3,244 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time.is - 准确的时间</title>
-    <style>
-        /* 1. 文字格式与配色完全复刻 */
-        :root {
-            --bg: #222222;
-            --text-main: #ffffff;
-            --text-dim: #999999;
-            --border: #333333;
-            --hover-bg: #2a2a2a;
-        }
-
-        body.light {
-            --bg: #ffffff;
-            --text-main: #222222;
-            --text-dim: #666666;
-            --border: #eeeeee;
-            --hover-bg: #f5f5f5;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            /* 严格复刻字体栈 */
-            font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            transition: background 0.1s ease;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* 顶部 Logo 区排版 */
-        header {
-            padding: 20px 30px;
-            font-size: 1.1rem;
-        }
-        .logo-text {
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            cursor: pointer;
-        }
-
-        /* 主时钟排版 */
-        .hero {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 20px;
-            text-align: center;
-        }
-
-        #city-label {
-            font-size: 2.4rem;
-            font-weight: 300; /* Time.is 城市名通常比较轻盈 */
-            color: var(--text-dim);
-            margin-bottom: 0px;
-        }
-
-        /* 核心时间：大字号、负字间距、等宽数字 */
-        #main-clock {
-            font-size: 18vw;
-            font-weight: 700;
-            line-height: 1;
-            letter-spacing: -0.04em; /* 核心：紧凑感 */
-            margin: 15px 0;
-            font-variant-numeric: tabular-nums; /* 防止数字晃动 */
-            cursor: pointer;
-        }
-
-        #main-date {
-            font-size: 1.6rem;
-            font-weight: 400;
-            color: var(--text-dim);
-        }
-
-        /* 城市网格排版 */
-        .world-grid {
-            max-width: 1000px;
-            margin: 60px auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            border-top: 1px solid var(--border);
-            border-left: 1px solid var(--border);
-        }
-
-        .city-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 18px 25px;
-            border-right: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .city-row:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .city-row .n { font-size: 1.25rem; font-weight: 400; }
-        .city-row .t { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-        /* 底部链接组排版 */
-        footer {
-            max-width: 1000px;
-            margin: 100px auto 50px;
-            padding: 40px 20px;
-            border-top: 1px solid var(--border);
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 30px;
-        }
-
-        footer h4 {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 15px;
-        }
-
-        footer ul { list-style: none; padding: 0; margin: 0; }
-        footer li {
-            font-size: 0.95rem;
-            margin-bottom: 10px;
-            color: var(--text-main);
-            opacity: 0.8;
-            cursor: pointer;
-        }
-        footer li:hover { opacity: 1; text-decoration: underline; }
-
-        /* 同步提示小字 */
-        .sync-status {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-        }
-
-        @media (max-width: 768px) {
-            #main-clock { font-size: 26vw; }
-            footer { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
+    <title>Time.is - 精确的时间</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body onclick="if(event.target==document.body) toggleTheme()">
+<body>
+    <div class="container">
+        <header>
+            <nav>
+                <a href="#">菜单</a>
+                <a href="#">设置</a>
+            </nav>
+        </header>
 
-    <header>
-        <span class="logo-text" onclick="toggleTheme()">Time.is</span>
-    </header>
-
-    <div class="hero">
-        <div id="city-label">北京</div>
-        <div id="main-clock">00:00:00</div>
-        <div id="main-date">...</div>
-        
-        <div class="world-grid" id="world-grid">
+        <main>
+            <h1 id="location">北京, 中国</h1>
+            <div id="clock-container">
+                <span id="time">00:00:00</span>
             </div>
+            <p id="date">2026年1月10日 星期六</p>
+            <p id="accuracy">您的时钟误差为：<span id="offset">-0.024 秒</span></p>
+        </main>
+
+        <footer>
+            <div class="search-bar">
+                <input type="text" placeholder="搜索地点...">
+            </div>
+        </footer>
     </div>
-
-    <footer>
-        <div>
-            <h4>常用城市</h4>
-            <ul><li>纽约</li><li>伦敦</li><li>东京</li><li>香港</li></ul>
-        </div>
-        <div>
-            <h4>时区</h4>
-            <ul><li>UTC</li><li>GMT</li><li>CET</li></ul>
-        </div>
-        <div>
-            <h4>关于</h4>
-            <ul><li>联系我们</li><li>API</li><li>隐私</li></ul>
-        </div>
-        <div>
-            <h4>其他</h4>
-            <ul><li>日历</li><li>秒表</li><li>倒计时</li></ul>
-        </div>
-    </footer>
-
-    <div class="sync-status" id="sync-msg">正在同步...</div>
-
-    <script>
-        // 配置你的 Worker URL
-        const WORKER_URL = 'https://time-api.sspai.pp.ua';
-        let offset = 0;
-
-        const cities = [
-            { n: '纽约', tz: 'America/New_York' },
-            { n: '伦敦', tz: 'Europe/London' },
-            { n: '东京', tz: 'Asia/Tokyo' },
-            { n: '巴黎', tz: 'Europe/Paris' },
-            { n: '悉尼', tz: 'Australia/Sydney' },
-            { n: '香港', tz: 'Asia/Hong_Kong' }
-        ];
-
-        function toggleTheme() { document.body.classList.toggle('light'); }
-
-        function update() {
-            const now = new Date(Date.now() + offset);
-            
-            // 主钟格式化
-            const h = now.getHours().toString().padStart(2, '0');
-            const m = now.getMinutes().toString().padStart(2, '0');
-            const s = now.getSeconds().toString().padStart(2, '0');
-            document.getElementById('main-clock').innerText = `${h}:${m}:${s}`;
-            
-            // 日期格式化
-            const dOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('main-date').innerText = now.toLocaleDateString('zh-CN', dOptions);
-
-            // 列表生成与更新
-            const grid = document.getElementById('world-grid');
-            if(grid.children.length === 0) {
-                cities.forEach(c => {
-                    grid.innerHTML += `<div class="city-row"><span class="n">${c.n}</span><span class="t" id="${c.tz}">--:--:--</span></div>`;
-                });
-            }
-            cities.forEach(c => {
-                const ct = new Date(Date.now() + offset).toLocaleTimeString('zh-CN', {timeZone: c.tz, hour12: false});
-                document.getElementById(c.tz).innerText = ct;
-            });
-
-            requestAnimationFrame(update);
-        }
-
-        async function sync() {
-            try {
-                const t1 = Date.now();
-                const res = await fetch(WORKER_URL);
-                const data = await res.json();
-                const t2 = Date.now();
-                offset = (data.ms + (t2 - t1)/2) - t2;
-                document.getElementById('sync-msg').innerText = `您的时间${offset > 0 ? '慢了' : '快了'} ${(Math.abs(offset)/1000).toFixed(3)} 秒`;
-            } catch (e) { document.getElementById('sync-msg').innerText = "同步失败"; }
-        }
-
-        update();
-        sync();
-        setInterval(sync, 60000);
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
