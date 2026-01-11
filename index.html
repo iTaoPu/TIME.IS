@@ -3,228 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time.is - 仿制版</title>
+    <title>Time.is - 精确的时间</title>
     <style>
+        /* 复刻 Time.is 核心设计语言 */
         :root {
-            --bg: #222;
-            --text: #fff;
-            --dim: #999;
-            --accent: #333;
-            --hover: #444;
+            --bg: #222222;
+            --text: #ffffff;
+            --dim: #999999;
+            --border: #333333;
+            --hover-bg: #2a2a2a;
         }
 
         body.light {
-            --bg: #fff;
-            --text: #222;
-            --dim: #666;
-            --accent: #eee;
-            --hover: #ddd;
+            --bg: #ffffff;
+            --text: #222222;
+            --dim: #666666;
+            --border: #eeeeee;
+            --hover-bg: #f5f5f5;
         }
 
         body {
             background-color: var(--bg);
             color: var(--text);
-            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: background 0.2s;
-            min-height: 100vh;
+            line-height: 1.5;
+            transition: background 0.15s ease;
         }
 
-        /* 顶部导航 */
-        .nav {
-            width: 100%;
-            padding: 20px;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        .menu-icon { fill: var(--text); cursor: pointer; }
-
-        /* 主时钟区域 */
-        .main-clock {
-            text-align: center;
-            margin-top: 5vh;
-            margin-bottom: 5vh;
-            cursor: pointer;
-        }
-
-        #city-main { font-size: 2.2rem; font-weight: 300; color: var(--dim); }
-        #time-main { 
-            font-size: 15vw; 
-            font-weight: 700; 
-            line-height: 1; 
-            letter-spacing: -4px; 
-            font-variant-numeric: tabular-nums; 
-        }
-        #date-main { font-size: 1.6rem; color: var(--dim); margin-top: 10px; }
-
-        /* 全球城市对比模块 - Time.is 风格 */
-        .world-clock-section {
-            width: 90%;
-            max-width: 1000px;
-            margin-bottom: 100px;
-        }
-
-        .world-clock-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2px; /* 模拟细分界线 */
-            background-color: var(--accent); /* 线条颜色 */
-            border: 1px solid var(--accent);
-        }
-
-        .city-item {
-            background-color: var(--bg);
+        /* 顶部紧凑导航 */
+        header {
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+        }
+
+        .logo { font-size: 1.4rem; font-weight: bold; cursor: pointer; }
+
+        /* 主显示区 */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        #city-main { font-size: 2.8rem; font-weight: 300; margin-bottom: 5px; }
+        
+        /* 核心大字：Time.is 的灵魂 */
+        #time-main {
+            font-size: 18vw; /* 巨型字体 */
+            font-weight: 700;
+            letter-spacing: -5px;
+            line-height: 0.9;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+        }
+
+        #date-main { font-size: 1.8rem; color: var(--dim); margin-bottom: 40px; }
+
+        /* 城市对比网格：像素级对齐 */
+        .world-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            border-top: 1px solid var(--border);
+            border-left: 1px solid var(--border);
+            margin-top: 50px;
+        }
+
+        .city-card {
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             text-decoration: none;
             color: inherit;
-            transition: background 0.1s;
         }
 
-        .city-item:hover {
-            background-color: var(--hover);
+        .city-card:hover { background-color: var(--hover-bg); }
+        .city-card .name { font-size: 1.3rem; }
+        .city-card .time { font-size: 1.3rem; font-weight: 700; }
+
+        /* 底部多列导航群：这是完全仿制的关键 */
+        footer {
+            max-width: 1200px;
+            margin: 80px auto 40px;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            border-top: 1px solid var(--border);
+            padding-top: 40px;
         }
 
-        .city-name {
-            font-size: 1.2rem;
-            font-weight: 400;
-        }
+        footer h4 { color: var(--dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        footer ul { list-style: none; padding: 0; }
+        footer li { margin-bottom: 8px; font-size: 0.95rem; color: var(--text); opacity: 0.8; cursor: pointer; }
+        footer li:hover { opacity: 1; text-decoration: underline; }
 
-        .city-time {
-            font-size: 1.2rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* 底部同步栏 */
-        .sync-bar {
+        /* 同步状态浮动条 */
+        .sync-info {
             position: fixed;
-            bottom: 30px;
-            padding: 8px 20px;
-            border-radius: 20px;
-            background: var(--accent);
-            font-size: 0.9rem;
-            z-index: 100;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.85rem;
+            color: var(--dim);
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 4px;
         }
 
-        @media (max-width: 600px) {
-            #time-main { font-size: 22vw; }
-            .world-clock-grid { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
+            footer { grid-template-columns: 1fr 1fr; }
+            #time-main { font-size: 25vw; letter-spacing: -2px; }
         }
     </style>
 </head>
-<body class="">
+<body onclick="if(event.target==body)toggleMode()">
 
-    <div class="nav">
-        <svg class="menu-icon" onclick="toggleMode()" width="30" height="30" viewBox="0 0 24 24">
-            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-        </svg>
-    </div>
+    <header>
+        <div class="logo" onclick="toggleMode()">Time.is</div>
+        <div style="color:var(--dim)">精确到毫秒</div>
+    </header>
 
-    <div class="main-clock" onclick="toggleMode()">
+    <main>
         <div id="city-main">北京</div>
-        <div id="time-main">00:00:00</div>
+        <div id="time-main" onclick="toggleMode()">00:00:00</div>
         <div id="date-main">加载中...</div>
-    </div>
 
-    <div class="world-clock-section">
-        <div class="world-clock-grid" id="world-grid">
+        <div class="world-grid" id="world-grid">
             </div>
-    </div>
+    </main>
 
-    <div id="sync-bar" class="sync-bar">正在对准原子钟...</div>
+    <footer>
+        <div>
+            <h4>热门城市</h4>
+            <ul><li>纽约</li><li>伦敦</li><li>东京</li><li>香港</li></ul>
+        </div>
+        <div>
+            <h4>时区</h4>
+            <ul><li>UTC</li><li>GMT</li><li>CET</li><li>PST</li></ul>
+        </div>
+        <div>
+            <h4>日历</h4>
+            <ul><li>2024年日历</li><li>2025年日历</li><li>工作日计算</li></ul>
+        </div>
+        <div>
+            <h4>关于</h4>
+            <ul><li>联系我们</li><li>API</li><li>关于 Time.is</li></ul>
+        </div>
+    </footer>
+
+    <div id="sync-bar" class="sync-info">正在同步原子钟...</div>
 
     <script>
-        // 配置：替换为你部署在 Cloudflare 的 URL
-        const WORKER_URL = 'https://your-worker.yourname.workers.dev';
+        const WORKER_URL = 'https://time-api.sspai.pp.ua'; 
         let offset = 0;
 
-        // 城市配置：名称及其对应的 IANA 时区
         const cities = [
-            { name: '纽约', tz: 'America/New_York' },
-            { name: '伦敦', tz: 'Europe/London' },
-            { name: '东京', tz: 'Asia/Tokyo' },
-            { name: '巴黎', tz: 'Europe/Paris' },
-            { name: '悉尼', tz: 'Australia/Sydney' },
-            { name: '迪拜', tz: 'Asia/Dubai' },
-            { name: '莫斯科', tz: 'Europe/Moscow' },
-            { name: '洛杉矶', tz: 'America/Los_Angeles' }
+            { n: '纽约', tz: 'America/New_York' },
+            { n: '伦敦', tz: 'Europe/London' },
+            { n: '东京', tz: 'Asia/Tokyo' },
+            { n: '巴黎', tz: 'Europe/Paris' },
+            { n: '悉尼', tz: 'Australia/Sydney' },
+            { n: '香港', tz: 'Asia/Hong_Kong' }
         ];
 
-        function toggleMode() {
-            document.body.classList.toggle('light');
-        }
+        function toggleMode() { document.body.classList.toggle('light'); }
 
-        function formatTime(date, tz = null) {
-            const options = {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            };
-            if (tz) options.timeZone = tz;
-            return new Intl.DateTimeFormat('zh-CN', options).format(date);
-        }
-
-        function updateClocks() {
+        function update() {
             const now = new Date(Date.now() + offset);
             
-            // 更新主时钟
-            document.getElementById('time-main').textContent = formatTime(now);
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('date-main').textContent = now.toLocaleDateString('zh-CN', dateOptions);
+            // 更新主钟
+            document.getElementById('time-main').innerText = now.toTimeString().split(' ')[0];
+            document.getElementById('date-main').innerText = now.toLocaleDateString('zh-CN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-            // 更新城市列表
+            // 更新对比列表 (仅在列表为空时创建)
             const grid = document.getElementById('world-grid');
-            if (grid.children.length === 0) {
-                // 初次渲染结构
-                cities.forEach(city => {
-                    const div = document.createElement('div');
-                    div.className = 'city-item';
-                    div.innerHTML = `
-                        <span class="city-name">${city.name}</span>
-                        <span class="city-time" id="time-${city.tz}">${formatTime(now, city.tz)}</span>
-                    `;
-                    grid.appendChild(div);
-                });
-            } else {
-                // 后续仅更新数值
-                cities.forEach(city => {
-                    document.getElementById(`time-${city.tz}`).textContent = formatTime(now, city.tz);
+            if(grid.innerHTML.trim() === "") {
+                cities.forEach(c => {
+                    grid.innerHTML += `<a class="city-card"><span class="name">${c.n}</span><span class="time" id="${c.tz}">--:--:--</span></a>`;
                 });
             }
-            
-            requestAnimationFrame(updateClocks);
+            cities.forEach(c => {
+                const ct = new Date(Date.now() + offset).toLocaleTimeString('zh-CN', {timeZone: c.tz, hour12: false});
+                document.getElementById(c.tz).innerText = ct;
+            });
+
+            requestAnimationFrame(update);
         }
 
-        async function syncTime() {
-            const syncEl = document.getElementById('sync-bar');
-            const t1 = Date.now();
+        async function sync() {
             try {
+                const t1 = Date.now();
                 const res = await fetch(WORKER_URL);
                 const data = await res.json();
                 const t2 = Date.now();
-                const latency = (t2 - t1) / 2;
-                offset = (data.ms + latency) - t2;
-                
-                const diff = (Math.abs(offset) / 1000).toFixed(3);
-                syncEl.textContent = `您的时间${offset > 0 ? '慢了' : '快了'} ${diff} 秒`;
-            } catch (e) {
-                syncEl.textContent = "无法同步时间";
-            }
+                offset = (data.ms + (t2 - t1)/2) - t2;
+                document.getElementById('sync-bar').innerText = `时间已同步 (误差 ${(offset/1000).toFixed(3)}s)`;
+            } catch (e) { console.log("Sync failed"); }
         }
 
-        // 运行
-        updateClocks();
-        syncTime();
-        setInterval(syncTime, 60000);
+        update();
+        sync();
+        setInterval(sync, 60000);
     </script>
 </body>
 </html>
