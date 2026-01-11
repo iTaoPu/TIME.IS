@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time.is - Exact time for any time zone</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --accent-color: #d8d8d8;
+            --status-ok: #50c878;
+            --status-warn: #ffcc00;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.3s;
+            text-align: center;
+        }
+        #time {
+            font-size: 12vw;
+            font-weight: bold;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+        #date {
+            font-size: 2.5vw;
+            margin-top: 10px;
+            color: var(--accent-color);
+        }
+        #location {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        #sync-status {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border: 1px solid #444;
+            display: inline-block;
+            border-radius: 4px;
+        }
+        .exact { border-color: var(--status-ok); color: var(--status-ok); }
+        .off { border-color: var(--status-warn); color: var(--status-warn); }
+        
+        @media (max-width: 600px) {
+            #time { font-size: 18vw; }
+            #date { font-size: 5vw; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="location">Beijing, China</div>
+    <div id="time">Loading...</div>
+    <div id="date"></div>
+    <div id="sync-status">正在同步...</div>
+
+    <script>
+        // 配置：填入你第一步部署的 Worker URL
+        const TIME_API_URL = 'https://time-api.ugreen.workers.dev'; 
+
+        let timeOffset = 0; // 本地时间与服务器时间的差值 (ms)
+        let isSynced = false;
+
+        async function syncTime() {
+            const t0 = Date.now();
+            try {
+                const response = await fetch(TIME_API_URL);
+                const data = await response.json();
+                const t3 = Date.now();
+                
+                // 核心算法：计算往返延迟的一半作为单向延迟
+                const roundTrip = t3 - t0;
+                const oneWayDelay = roundTrip / 2;
+                
+                // 估算的真实服务器当前时间
+                const serverTimeNow = data.t + oneWayDelay;
+                
+                // 计算本地偏差：(真实服务器时间 - 本地收到响应的时间)
+                // 修正：实际上 offset 应该是 (serverTime - localTime)
+                // 我们使用收到响应时的本地时间 t3 来对比
+                timeOffset = serverTimeNow - t3;
+                
+                isSynced = true;
+                updateStatus(timeOffset, roundTrip);
+            } catch (e) {
+                console.error("同步失败", e);
+                document.getElementById('sync-status').innerText = "同步失败，显示本地时间";
+            }
+        }
+
+        function updateStatus(offset, latency) {
+            const statusEl = document.getElementById('sync-status');
+            const absOffset = Math.abs(offset);
+            const seconds = (absOffset / 1000).toFixed(1);
+            
+            let msg = "";
+            statusEl.className = "";
+
+            if (absOffset < 500) {
+                msg = `您的时间是准确的! (偏差 < 0.5秒)`;
+                statusEl.classList.add('exact');
+            } else {
+                const direction = offset > 0 ? "慢" : "快";
+                msg = `您的时钟${direction}了 ${seconds} 秒`;
+                statusEl.classList.add('off');
+            }
+            statusEl.innerText = msg; // + ` (精度: ±${Math.round(latency/2)}ms)`;
+        }
+
+        function updateClock() {
+            const now = new Date(Date.now() + timeOffset);
+            
+            // 格式化时间 HH:mm:ss
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('time').innerText = `${h}:${m}:${s}`;
+
+            // 格式化日期
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('date').innerText = now.toLocaleDateString('zh-CN', options);
+            
+            // 使用 requestAnimationFrame 保持高刷新率
+            requestAnimationFrame(updateClock);
+        }
+
+        // 启动
+        updateClock();
+        syncTime();
+        
+        // 每10秒重新同步一次以保持精准
+        setInterval(syncTime, 10000);
+    </script>
+</body>
+</html>
