@@ -3,144 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time.is - Exact time for any time zone</title>
+    <title>Time.is - 精确的时间</title>
     <style>
+        /* 样式完全仿制 Time.is */
         :root {
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-            --accent-color: #d8d8d8;
-            --status-ok: #50c878;
-            --status-warn: #ffcc00;
+            --bg: #222;
+            --text: #fff;
+            --dim: #999;
+            --accent: #555;
         }
+
+        body.light {
+            --bg: #fff;
+            --text: #222;
+            --dim: #666;
+            --accent: #eee;
+        }
+
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            margin: 0;
-            transition: background 0.3s;
+            transition: background 0.2s;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* 顶部导航模拟图标 (使用 SVG 保证清晰度) */
+        .menu-icon {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            fill: var(--text);
+        }
+
+        .header-info {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+
+        /* 核心大时钟 */
+        #clock-container {
             text-align: center;
         }
+
         #time {
-            font-size: 12vw;
-            font-weight: bold;
-            letter-spacing: -2px;
+            font-size: 16vw;
+            font-weight: 700;
             line-height: 1;
+            letter-spacing: -3px;
+            font-variant-numeric: tabular-nums;
         }
+
         #date {
-            font-size: 2.5vw;
-            margin-top: 10px;
-            color: var(--accent-color);
+            font-size: 1.8rem;
+            margin-top: 15px;
+            color: var(--dim);
         }
-        #location {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            opacity: 0.8;
+
+        /* 底部同步状态栏 */
+        .sync-bar {
+            position: absolute;
+            bottom: 50px;
+            padding: 10px 25px;
+            border-radius: 30px;
+            background: var(--accent);
+            font-size: 1rem;
+            color: var(--text);
+            font-weight: 500;
         }
-        #sync-status {
-            margin-top: 30px;
-            font-size: 1.2rem;
-            padding: 10px 20px;
-            border: 1px solid #444;
-            display: inline-block;
-            border-radius: 4px;
-        }
-        .exact { border-color: var(--status-ok); color: var(--status-ok); }
-        .off { border-color: var(--status-warn); color: var(--status-warn); }
-        
-        @media (max-width: 600px) {
-            #time { font-size: 18vw; }
-            #date { font-size: 5vw; }
-        }
+
+        .syncing { animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.6; } }
+
+        /* 纯 CSS 图标 */
+        .icon { width: 24px; height: 24px; vertical-align: middle; margin-right: 8px; }
     </style>
 </head>
-<body>
+<body onclick="toggleMode()">
 
-    <div id="location">Beijing, China</div>
-    <div id="time">Loading...</div>
-    <div id="date"></div>
-    <div id="sync-status">正在同步...</div>
+    <svg class="menu-icon" width="30" height="30" viewBox="0 0 24 24">
+        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+    </svg>
+
+    <div id="clock-container">
+        <div class="header-info" id="city">北京, 中国</div>
+        <div id="time">00:00:00</div>
+        <div id="date">正在读取...</div>
+    </div>
+
+    <div id="sync-bar" class="sync-bar syncing">正在连接原子钟...</div>
 
     <script>
-        // 配置：填入你第一步部署的 Worker URL
-        const TIME_API_URL = 'https://time-api.ugreen.workers.dev'; 
-
-        let timeOffset = 0; // 本地时间与服务器时间的差值 (ms)
-        let isSynced = false;
-
-        async function syncTime() {
-            const t0 = Date.now();
-            try {
-                const response = await fetch(TIME_API_URL);
-                const data = await response.json();
-                const t3 = Date.now();
-                
-                // 核心算法：计算往返延迟的一半作为单向延迟
-                const roundTrip = t3 - t0;
-                const oneWayDelay = roundTrip / 2;
-                
-                // 估算的真实服务器当前时间
-                const serverTimeNow = data.t + oneWayDelay;
-                
-                // 计算本地偏差：(真实服务器时间 - 本地收到响应的时间)
-                // 修正：实际上 offset 应该是 (serverTime - localTime)
-                // 我们使用收到响应时的本地时间 t3 来对比
-                timeOffset = serverTimeNow - t3;
-                
-                isSynced = true;
-                updateStatus(timeOffset, roundTrip);
-            } catch (e) {
-                console.error("同步失败", e);
-                document.getElementById('sync-status').innerText = "同步失败，显示本地时间";
-            }
-        }
-
-        function updateStatus(offset, latency) {
-            const statusEl = document.getElementById('sync-status');
-            const absOffset = Math.abs(offset);
-            const seconds = (absOffset / 1000).toFixed(1);
-            
-            let msg = "";
-            statusEl.className = "";
-
-            if (absOffset < 500) {
-                msg = `您的时间是准确的! (偏差 < 0.5秒)`;
-                statusEl.classList.add('exact');
-            } else {
-                const direction = offset > 0 ? "慢" : "快";
-                msg = `您的时钟${direction}了 ${seconds} 秒`;
-                statusEl.classList.add('off');
-            }
-            statusEl.innerText = msg; // + ` (精度: ±${Math.round(latency/2)}ms)`;
-        }
-
-        function updateClock() {
-            const now = new Date(Date.now() + timeOffset);
-            
-            // 格式化时间 HH:mm:ss
-            const h = String(now.getHours()).padStart(2, '0');
-            const m = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('time').innerText = `${h}:${m}:${s}`;
-
-            // 格式化日期
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('date').innerText = now.toLocaleDateString('zh-CN', options);
-            
-            // 使用 requestAnimationFrame 保持高刷新率
-            requestAnimationFrame(updateClock);
-        }
-
-        // 启动
-        updateClock();
-        syncTime();
+        // 配置：请将此地址替换为你部署的 Cloudflare Worker URL
+        const WORKER_URL = 'https://time-api.sspai.pp.ua';
         
-        // 每10秒重新同步一次以保持精准
-        setInterval(syncTime, 10000);
+        let offset = 0; // 本地与服务器的时间差
+
+        // 1. 高精度时间显示逻辑
+        function updateDisplay() {
+            const now = new Date(Date.now() + offset);
+            
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            const s = now.getSeconds().toString().padStart(2, '0');
+            
+            document.getElementById('time').textContent = `${h}:${m}:${s}`;
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('date').textContent = now.toLocaleDateString('zh-CN', options);
+            
+            requestAnimationFrame(updateDisplay);
+        }
+
+        // 2. 时间同步逻辑 (NTP 原理)
+        async function syncTime() {
+            const syncEl = document.getElementById('sync-bar');
+            const t1 = Date.now();
+            
+            try {
+                const response = await fetch(WORKER_URL);
+                const data = await response.json();
+                const t2 = Date.now();
+                
+                // 计算延迟和实际偏移
+                const latency = (t2 - t1) / 2;
+                const serverTime = data.ms + latency;
+                offset = serverTime - t2;
+
+                const diffSeconds = (Math.abs(offset) / 1000).toFixed(3);
+                const status = offset > 0 ? "慢了" : "快了";
+                
+                syncEl.classList.remove('syncing');
+                syncEl.textContent = `您的时钟${status} ${diffSeconds} 秒 (误差 ±${latency.toFixed(0)}ms)`;
+                syncEl.style.background = "#28a745"; // 绿色表示同步成功
+                
+                setTimeout(() => {
+                    syncEl.style.background = "var(--accent)";
+                }, 3000);
+
+            } catch (err) {
+                syncEl.textContent = "同步失败，正在重试...";
+                syncEl.style.background = "#dc3545";
+            }
+        }
+
+        // 3. 交互：点击切换模式
+        function toggleMode() {
+            document.body.classList.toggle('light');
+        }
+
+        // 初始化
+        updateDisplay();
+        syncTime();
+        setInterval(syncTime, 30000); // 每30秒自动后台对时
     </script>
 </body>
 </html>
